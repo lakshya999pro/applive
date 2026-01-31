@@ -2,10 +2,16 @@ const express = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
 const path = require('path');
+const cors = require('cors');
 
 const app = express();
 const PORT = 3000;
 
+app.use(cors());
+
+app.use(cors({
+    origin: 'https://lighthearted-sfogliatella-c38e5d.netlify.app'
+}));
 // SK Tech Decryption Configuration
 const AES_KEY = Buffer.from('l2l5kB7xC5qP1rK1', 'utf8');
 const AES_IV = Buffer.from('p1K5nP7uB8hH1l19', 'utf8');
