@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KineFlex LIVE - IPTV</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #0066ff;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffffff;
+        }
+
+        .page-indicator {
+            background-color: #0066ff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-btn:hover {
+            background-color: rgba(0, 102, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .search-box {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            width: 250px;
+            background-color: #1a1a2e;
+            border: 2px solid #0066ff;
+            border-radius: 4px;
+            padding: 10px;
+            z-index: 1000;
+        }
+
+        .search-box.active {
+            display: block;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #0066ff;
+            border-radius: 4px;
+            background-color: #0a0a0a;
+            color: white;
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #00ff00;
+        }
+
+        .search-results {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .search-result-item {
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #0f3460;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .search-result-item:hover {
+            background-color: #0066ff;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: #0066ff;
+            border-radius: 3px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .channel-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .channel-logo {
+            width: 100%;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 8px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .channel-logo-placeholder {
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(135deg, #0066ff 0%, #0048cc 100%);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .channel-card:hover,
+        .channel-card:focus {
+            border-color: #0066ff;
+            background: linear-gradient(135deg, #0066ff 0%, #0048cc 100%);
+            transform: scale(1.02);
+            outline: none;
+        }
+
+        .channel-card.focused {
+            border-color: #0066ff;
+            background: linear-gradient(135deg, #0066ff 0%, #0048cc 100%);
+            box-shadow: 0 0 20px rgba(0, 102, 255, 0.5);
+        }
+
+        .channel-number {
+            font-size: 12px;
+            color: #aaaaaa;
+            margin-bottom: 4px;
+        }
+
+        .channel-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            font-size: 16px;
+            color: #0066ff;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background-color: #0066ff;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .btn:hover,
+        .btn:focus {
+            background-color: #0048cc;
+            transform: translateY(-2px);
+            outline: none;
+        }
+
+        .btn.active {
+            background-color: #00ff00;
+            color: #000;
+        }
+
+        .error-message {
+            background-color: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff4444;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            color: #ffaaaa;
+            font-size: 13px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+            }
+
+            .header-title {
+                font-size: 32px;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+            }
+
+            .channel-card {
+                min-height: 100px;
+                padding: 20px;
+            }
+        }
+
+        .live-badge {
+            display: inline-block;
+            background-color: #ff0000;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .page-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .page-btn {
+            padding: 10px 12px;
+            font-size: 11px;
+            flex: 1;
+            min-width: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .page-num {
+            font-size: 10px;
+            opacity: 0.8;
+        }
+
+        .page-name {
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .page-btn.active {
+            background-color: #00ff00;
+            color: #000;
+        }
+
+        .load-more-btn {
+            background-color: #0066ff;
+            width: 100%;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">KINEFLEX LIVE</div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <button class="header-btn" id="refreshBtn" title="Refresh">
+                    ↻
+                </button>
+                <button class="header-btn" id="searchBtn" title="Search">
+                    🔍
+                </button>
+                <div class="search-box" id="searchBox">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search channels...">
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+                <div class="page-indicator">Page <span id="pageNum">1</span> of 10</div>
+            </div>
+        </div>
+
+        <div class="content" id="contentArea">
+            <div class="page-nav" id="pageNav"></div>
+            <div id="errorContainer"></div>
+            <div class="grid" id="channelGrid">
+                <div class="loading">Loading channels...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            playlists: [
+                {
+                    name: "Live Channels",
+                    url: "http://localhost:3000/api/events",
+                    type: "events"
+                },
+                {
+                    name: "Sports(600+)",
+                    url: "https://raw.githubusercontent.com/lakshya999pro/op/refs/heads/main/test.json",
+                    type: "json"
+                },
+                {
+                    name: "FanCode",
+                    url: "https://raw.githubusercontent.com/Jitendra-unatti/fancode/refs/heads/main/data/fancode.m3u",
+                    type: "m3u"
+                },
+                {
+                    name: "Entertainment",
+                    url: "https://raw.githubusercontent.com/Sufiyan123yivh/Testing/refs/heads/main/Sony.m3u",
+                    type: "m3u"
+                },
+                {
+                    name: "Sports(HD)",
+                    url: "https://raw.githubusercontent.com/abusaeeidx/CricHd-playlists-Auto-Update-permanent/main/ALL.m3u",
+                    type: "m3u"
+                },
+                {
+                    name: "JIO TV",
+                    url: "https://raw.githubusercontent.com/cloudplay97/m3u/main/jiotv-mb.m3u",
+                    type: "m3u"
+                },
+                {
+                    name: "TV LIVE",
+                    url: "https://jiotv-playlist.pages.dev/freetvindia.m3u",
+                    type: "m3u"
+                },
+                {
+                    name: "YUPPTV",
+                    url: "https://raw.githubusercontent.com/abusaeeidx/Yupptv-Playlist/refs/heads/main/playlist.m3u",
+                    type: "m3u"
+                },
+                {
+                    name: "International",
+                    url: "https://raw.githubusercontent.com/Jitendra-unatti/fancode/refs/heads/main/data/fancode.m3u",
+                    type: "m3u"
+                },
+                {
+                    name: "Premium Channels",
+                    url: "https://raw.githubusercontent.com/abusaeeidx/CricHd-playlists-Auto-Update-permanent/main/ALL.m3u",
+                    type: "m3u"
+                }
+            ],
+            cacheTimeout: 3600000 // 1 hour
+        };
+
+        let currentPage = 0;
+        let allChannels = {};
+        let focusedIndex = 0;
+        let isLoading = false;
+        let currentDisplayedCount = {}; // Track how many channels displayed per page
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            createPageButtons();
+            loadPage(0);
+            setupKeyboardNavigation();
+            setupHeaderButtons();
+        });
+
+        function createPageButtons() {
+            const pageNav = document.getElementById('pageNav');
+            pageNav.innerHTML = '';
+            
+            CONFIG.playlists.forEach((playlist, index) => {
+                const btn = document.createElement('button');
+                btn.className = `page-btn btn ${index === currentPage ? 'active' : ''}`;
+                btn.innerHTML = `
+                    <span class="page-num">${index + 1}</span>
+                    <span class="page-name">${playlist.name}</span>
+                `;
+                btn.onclick = () => loadPage(index);
+                pageNav.appendChild(btn);
+            });
+        }
+
+        function updatePageButtons() {
+            document.querySelectorAll('.page-btn').forEach((btn, index) => {
+                btn.classList.toggle('active', index === currentPage);
+            });
+        }
+
+        async function loadPage(pageIndex) {
+            if (isLoading) return;
+            
+            currentPage = pageIndex;
+            focusedIndex = 0;
+            updatePageButtons();
+            
+            document.getElementById('pageNum').textContent = pageIndex + 1;
+            const gridContainer = document.getElementById('channelGrid');
+            const errorContainer = document.getElementById('errorContainer');
+            
+            errorContainer.innerHTML = '';
+            gridContainer.innerHTML = '<div class="loading">Loading channels...</div>';
+            
+            isLoading = true;
+
+            try {
+                const playlistUrl = CONFIG.playlists[pageIndex].url;
+                const playlistType = CONFIG.playlists[pageIndex].type || 'm3u';
+                let channels = allChannels[pageIndex];
+
+                if (!channels) {
+                    const response = await fetch(playlistUrl, { 
+                        headers: { 'Accept': '*/*' },
+                        mode: 'cors'
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    // Parse based on type
+                    let data;
+                    if (playlistType === 'json' || playlistType === 'events') {
+                        data = await response.json();
+                    } else {
+                        data = await response.text();
+                    }
+                    
+                    channels = playlistType === 'json' ? parseJSON(data) : playlistType === 'events' ? parseEvents(data) : parseM3U(data);
+                    allChannels[pageIndex] = channels;
+                }
+
+                currentDisplayedCount[pageIndex] = 50; // Reset to 50 when loading new page
+                displayChannels(channels);
+            } catch (error) {
+                console.error('Load error:', error);
+                errorContainer.innerHTML = `<div class="error-message">Error loading channels: ${error.message}</div>`;
+                gridContainer.innerHTML = '<div class="empty-state">Failed to load playlist</div>';
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function parseM3U(content) {
+            const channels = [];
+            const lines = content.split('\n');
+            let currentInfo = null;
+
+            for (let line of lines) {
+                line = line.trim();
+                
+                if (line.startsWith('#EXTINF')) {
+                    const titleMatch = line.match(/,(.+?)$/);
+                    const title = titleMatch ? titleMatch[1].trim() : 'Unknown';
+                    
+                    const logoMatch = line.match(/tvg-logo="([^"]+)"/);
+                    const logo = logoMatch ? logoMatch[1] : null;
+                    
+                    currentInfo = { title, logo };
+                } else if (line && !line.startsWith('#') && currentInfo) {
+                    channels.push({
+                        ...currentInfo,
+                        url: line.trim()
+                    });
+                    currentInfo = null;
+                }
+            }
+
+            return channels.slice(0, 50); // Limit to 50 channels per page
+        }
+
+        function parseJSON(data) {
+            try {
+                let channels = [];
+                
+                if (Array.isArray(data)) {
+                    channels = data;
+                } else if (data.channels && Array.isArray(data.channels)) {
+                    channels = data.channels;
+                } else {
+                    throw new Error('Invalid JSON structure');
+                }
+                
+                return channels.map(ch => ({
+                    title: ch.name || ch.title || 'Unknown',
+                    url: ch.url || '',
+                    logo: ch.logo || ch.tvg_logo || ch.image || ch.poster || null
+                })); // Return all channels, pagination handled in display
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                return [];
+            }
+        }
+
+        function parseEvents(data) {
+            try {
+                if (!data.events || !Array.isArray(data.events)) {
+                    throw new Error('Invalid events structure');
+                }
+
+                return data.events.map((event, index) => {
+                    const teamA = event.teamA?.name || 'Team A';
+                    const teamB = event.teamB?.name || 'Team B';
+                    const title = `${teamA} vs ${teamB}`;
+                    
+                    let primaryLink = '';
+                    
+                    if (Array.isArray(event.links) && event.links.length > 0) {
+                        primaryLink = event.links[0];
+                    } else if (typeof event.links === 'string') {
+                        primaryLink = event.links;
+                    }
+                    
+                    return {
+                        title: title,
+                        url: primaryLink,
+                        logo: event.eventLogo || null,
+                        eventData: {
+                            eventName: event.eventName,
+                            category: event.category,
+                            teamA: teamA,
+                            teamB: teamB,
+                            startDateTime: event.schedule?.startDateTime,
+                            links: event.links || [],
+                            linkNames: event.linkNames || []
+                        }
+                    };
+                });
+            } catch (e) {
+                console.error('Events parse error:', e);
+                return [];
+            }
+        }
+
+        function displayChannels(channels) {
+            const gridContainer = document.getElementById('channelGrid');
+            gridContainer.innerHTML = '';
+
+            if (channels.length === 0) {
+                gridContainer.innerHTML = '<div class="empty-state">No channels available</div>';
+                return;
+            }
+
+            if (!currentDisplayedCount[currentPage]) {
+                currentDisplayedCount[currentPage] = 50;
+            }
+
+            // Sort channels to show live events first
+            const sortedChannels = channels.sort((a, b) => {
+                const aIsLive = a.eventData && isEventLive(a.eventData.startDateTime) ? 1 : 0;
+                const bIsLive = b.eventData && isEventLive(b.eventData.startDateTime) ? 1 : 0;
+                return bIsLive - aIsLive; // Live events first
+            });
+
+            const channelsToShow = sortedChannels.slice(0, currentDisplayedCount[currentPage]);
+            
+            channelsToShow.forEach((channel, index) => {
+                const card = document.createElement('button');
+                card.className = 'channel-card';
+                
+                let logoHTML = '';
+                if (channel.logo) {
+                    logoHTML = `<img class="channel-logo" src="${channel.logo}" alt="logo" onerror="this.style.display='none'">`;
+                } else {
+                    const initial = sanitizeTitle(channel.title).charAt(0).toUpperCase();
+                    logoHTML = `<div class="channel-logo-placeholder">${initial}</div>`;
+                }
+                
+                // Only show LIVE badge for active events
+                let liveHTML = '';
+                if (channel.eventData) {
+                    const isLive = isEventLive(channel.eventData.startDateTime);
+                    const startTime = formatTimeIST(channel.eventData.startDateTime);
+                    liveHTML = isLive ? `<div class="live-badge">LIVE</div>` : `<div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">${startTime}</div>`;
+                }
+                
+                card.innerHTML = `
+                    ${logoHTML}
+                    ${liveHTML}
+                    <div class="channel-number">#${index + 1}</div>
+                    <div class="channel-name">${sanitizeTitle(channel.title)}</div>
+                `;
+                
+                card.onclick = () => {
+                    // If this is an event with multiple links, show link selection
+                    if (channel.eventData && channel.eventData.links && channel.eventData.links.length > 1) {
+                        showEventLinkSelection(channel);
+                    } else {
+                        playMedia(channel.url, channel.title);
+                    }
+                };
+                card.addEventListener('focus', () => {
+                    card.classList.add('focused');
+                });
+                card.addEventListener('blur', () => {
+                    card.classList.remove('focused');
+                });
+
+                gridContainer.appendChild(card);
+            });
+
+            // Add Load More button if there are more channels
+            if (currentDisplayedCount[currentPage] < channels.length) {
+                const loadMoreBtn = document.createElement('button');
+                loadMoreBtn.className = 'load-more-btn btn';
+                loadMoreBtn.textContent = `Load More (${channels.length - currentDisplayedCount[currentPage]} more)`;
+                loadMoreBtn.onclick = () => {
+                    currentDisplayedCount[currentPage] += 50;
+                    displayChannels(channels);
+                };
+                
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'grid-column: 1 / -1; padding: 10px 0;';
+                wrapper.appendChild(loadMoreBtn);
+                gridContainer.appendChild(wrapper);
+            }
+
+            // Focus first card
+            setTimeout(() => {
+                const cards = gridContainer.querySelectorAll('.channel-card');
+                if (cards.length > 0) {
+                    cards[0].focus();
+                }
+            }, 100);
+        }
+
+        function sanitizeTitle(title) {
+            return title
+                .replace(/\[.*?\]/g, '')
+                .replace(/\(.*?\)/g, '')
+                .replace(/,.*/, '')
+                .trim()
+                .substring(0, 30);
+        }
+
+        function isEventLive(startDateTime) {
+            if (!startDateTime) return false;
+            
+            try {
+                // Server sends: "2026-01-31 19:00:00 IST"
+                // Remove "IST" and parse
+                const dateStr = startDateTime.replace(' IST', '').trim();
+                const eventStart = new Date(dateStr);
+                
+                // Convert current time to IST for comparison
+                const now = new Date();
+                const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+                
+                const eventDuration = 3 * 60 * 60 * 1000; // Assume 3 hours duration
+                const eventEnd = new Date(eventStart.getTime() + eventDuration);
+                
+                return istNow >= eventStart && istNow <= eventEnd;
+            } catch (e) {
+                console.error('isEventLive error:', e);
+                return false;
+            }
+        }
+
+        function formatTimeIST(dateString) {
+            if (!dateString) return '';
+            try {
+                // Server sends format: "2026-01-31 19:00:00 IST"
+                // Extract just the time part
+                const timeMatch = dateString.match(/(\d{2}):(\d{2}):(\d{2})/);
+                if (!timeMatch) return '';
+                
+                const hours = parseInt(timeMatch[1]);
+                const minutes = timeMatch[2];
+                
+                const hour12 = hours % 12 || 12;
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                
+                return `${String(hour12).padStart(2, '0')}:${minutes} ${ampm} IST`;
+            } catch (e) {
+                console.error('Date formatting error:', dateString, e);
+                return '';
+            }
+        }
+
+        /**
+         * Handle encrypted pro/*.txt links - decrypt and get streams
+         */
+        async function handleEncryptedLink(url, title) {
+            try {
+                // Validate and extract the path
+                if (!url || typeof url !== 'string' || url.trim().length === 0) {
+                    throw new Error('Invalid or empty URL');
+                }
+                
+                const trimmedUrl = url.trim();
+                let linkPath = trimmedUrl;
+                
+                // Ensure path starts with "pro/"
+                if (!linkPath.startsWith('pro/')) {
+                    if (linkPath.includes('pro/')) {
+                        linkPath = linkPath.substring(linkPath.indexOf('pro/'));
+                    } else {
+                        throw new Error(`Invalid encrypted link format: ${linkPath}`);
+                    }
+                }
+                
+                console.log(`Decrypting link: ${linkPath}`);
+                
+                // Call backend API to decrypt
+                const apiUrl = `http://localhost:3000/api/decrypt-link?path=${encodeURIComponent(linkPath)}`;
+                console.log(`Calling API: ${apiUrl}`);
+                
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} from decrypt API`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Decryption failed');
+                }
+                
+                const decryptedUrl = data.decryptedUrl;
+                console.log(`Decrypted response:`, decryptedUrl);
+                
+                // Parse the decrypted URL - it should be JSON array of streams
+                let streams;
+                try {
+                    streams = JSON.parse(decryptedUrl);
+                } catch (e) {
+                    // If not JSON array, treat as single stream
+                    console.warn('Decrypted data is not JSON, treating as direct stream URL');
+                    streams = [{
+                        name: 'Stream 1',
+                        link: decryptedUrl,
+                        api: null,
+                        tokenApi: null
+                    }];
+                }
+                
+                if (!Array.isArray(streams)) {
+                    streams = [streams];
+                }
+                
+                console.log(`Found ${streams.length} stream(s):`, streams);
+                
+                // If multiple streams, show selection dialog
+                if (streams.length > 1) {
+                    showStreamSelectionDialog(streams, title);
+                } else if (streams.length === 1) {
+                    playStream(streams[0], title);
+                } else {
+                    alert('No streams available from decrypted data');
+                }
+                
+            } catch (error) {
+                console.error('Error handling encrypted link:', error);
+                alert(`Error decrypting stream: ${error.message}`);
+            }
+        }
+
+        /**
+         * Handle direct links with headers (e.g., .m3u8|User-Agent=...&referer=...)
+         */
+        function handleDirectLink(url, title) {
+            try {
+                // Split by "|" to separate URL and headers
+                const parts = url.split('|');
+                const streamUrl = parts[0];
+                const headerString = parts[1] || '';
+                
+                // Parse headers from the header string
+                const headers = {};
+                if (headerString) {
+                    const headerPairs = headerString.split('&');
+                    headerPairs.forEach(pair => {
+                        const [key, value] = pair.split('=');
+                        if (key && value) {
+                            headers[decodeURIComponent(key)] = decodeURIComponent(value);
+                        }
+                    });
+                }
+                
+                console.log('Parsed headers:', headers);
+                
+                // Build stream object
+                const stream = {
+                    name: 'Direct Stream',
+                    link: streamUrl,
+                    api: null,
+                    tokenApi: null,
+                    headers: headers
+                };
+                
+                playStream(stream, title);
+                
+            } catch (error) {
+                console.error('Error handling direct link:', error);
+                alert(`Error processing stream: ${error.message}`);
+            }
+        }
+
+        /**
+         * Show dialog to select from multiple streams
+         */
+        function showStreamSelectionDialog(streams, title) {
+            let options = 'Select a stream:\n\n';
+            streams.forEach((stream, index) => {
+                options += `${index + 1}. ${stream.name || `Stream ${index + 1}`}\n`;
+            });
+            
+            const choice = prompt(options, '1');
+            
+            if (choice !== null) {
+                const index = parseInt(choice) - 1;
+                if (index >= 0 && index < streams.length) {
+                    playStream(streams[index], title);
+                } else {
+                    alert('Invalid selection');
+                }
+            }
+        }
+
+        /**
+         * Play a stream with proper headers and DRM support
+         */
+        function playStream(stream, title) {
+            try {
+                const videoData = {
+                    title: sanitizeTitle(title),
+                    stream_url: stream.link,
+                    type: 'live'
+                };
+                
+                // Add headers if available
+                if (stream.headers) {
+                    videoData.headers = stream.headers;
+                    if (stream.headers['User-Agent']) {
+                        videoData.userAgent = stream.headers['User-Agent'];
+                    }
+                    if (stream.headers['referer']) {
+                        videoData.referer = stream.headers['referer'];
+                    }
+                    if (stream.headers['origin']) {
+                        videoData.origin = stream.headers['origin'];
+                    }
+                }
+                
+                // Add DRM info if available
+                if (stream.api || stream.tokenApi) {
+                    videoData.drm = {
+                        type: 'widevine',
+                        license: stream.api || stream.tokenApi
+                    };
+                }
+                
+                // Add token if available
+                if (stream.token) {
+                    videoData.token = stream.token;
+                }
+                
+                // Add cookies if available
+                if (stream.cookies) {
+                    videoData.cookies = stream.cookies;
+                }
+                
+                console.log("Playing stream:", videoData);
+                
+                if (window.AndroidApp && window.AndroidApp.playVideo) {
+                    try {
+                        window.AndroidApp.playVideo(JSON.stringify(videoData));
+                    } catch (e) {
+                        console.error('Android bridge error:', e);
+                        alert(`Playing: ${videoData.title}\nURL: ${stream.link}`);
+                    }
+                } else {
+                    console.warn('Android bridge not available. Dev mode detected.');
+                    alert(`Playing: ${videoData.title}\n\nURL: ${stream.link}\n\n(Android bridge not found)`);
+                }
+                
+            } catch (error) {
+                console.error('Error playing stream:', error);
+                alert(`Error playing stream: ${error.message}`);
+            }
+        }
+
+        /**
+         * Route and handle media playback based on link type
+         */
+        function playMedia(url, title) {
+            if (!url || typeof url !== 'string' || url.trim().length === 0) {
+                alert('No stream URL available');
+                return;
+            }
+            
+            const trimmedUrl = url.trim();
+            
+            console.log(`Playing media: "${trimmedUrl}" | Title: "${title}"`);
+            
+            // Check if it's an encrypted pro/* link
+            if (trimmedUrl.includes('pro/') || trimmedUrl.startsWith('pro/')) {
+                handleEncryptedLink(trimmedUrl, title);
+            }
+            // Check if it's a direct link (starts with http/https or has | for headers)
+            else if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://') || trimmedUrl.includes('|')) {
+                handleDirectLink(trimmedUrl, title);
+            }
+            // Fallback for unknown link types
+            else {
+                console.warn('Unknown link type, attempting as direct URL:', trimmedUrl);
+                // Try to play it anyway - it might be a valid URL
+                handleDirectLink(trimmedUrl, title);
+            }
+        }
+
+        function setupKeyboardNavigation() {
+            document.addEventListener('keydown', (e) => {
+                const gridContainer = document.getElementById('channelGrid');
+                const cards = gridContainer.querySelectorAll('.channel-card');
+                
+                if (cards.length === 0) return;
+
+                let handled = false;
+
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                    case 'ArrowLeft':
+                    case 'ArrowRight':
+                        navigateGrid(e.key, cards);
+                        handled = true;
+                        break;
+                    case 'PageUp':
+                        if (currentPage > 0) loadPage(currentPage - 1);
+                        handled = true;
+                        break;
+                    case 'PageDown':
+                        if (currentPage < CONFIG.playlists.length - 1) loadPage(currentPage + 1);
+                        handled = true;
+                        break;
+                }
+
+                if (handled) {
+                    e.preventDefault();
+                }
+            });
+        }
+
+        function navigateGrid(direction, cards) {
+            if (cards.length === 0) return;
+
+            const colsCount = window.innerWidth < 768 ? 2 : window.innerWidth < 1280 ? 3 : 4;
+            let nextIndex = focusedIndex;
+
+            switch(direction) {
+                case 'ArrowLeft':
+                    nextIndex = Math.max(0, focusedIndex - 1);
+                    break;
+                case 'ArrowRight':
+                    nextIndex = Math.min(cards.length - 1, focusedIndex + 1);
+                    break;
+                case 'ArrowUp':
+                    nextIndex = Math.max(0, focusedIndex - colsCount);
+                    break;
+                case 'ArrowDown':
+                    nextIndex = Math.min(cards.length - 1, focusedIndex + colsCount);
+                    break;
+            }
+
+            if (nextIndex !== focusedIndex) {
+                focusedIndex = nextIndex;
+                cards[nextIndex].focus();
+                cards[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Preload next page
+        window.addEventListener('online', () => {
+            const nextPage = (currentPage + 1) % CONFIG.playlists.length;
+            if (!allChannels[nextPage]) {
+                preloadPage(nextPage);
+            }
+        });
+
+        function preloadPage(pageIndex) {
+            const playlistUrl = CONFIG.playlists[pageIndex].url;
+            fetch(playlistUrl, { mode: 'cors' })
+                .then(r => r.text())
+                .then(data => {
+                    allChannels[pageIndex] = parseM3U(data);
+                })
+                .catch(e => console.warn('Preload failed:', e));
+        }
+
+        function setupHeaderButtons() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const searchBtn = document.getElementById('searchBtn');
+            const searchBox = document.getElementById('searchBox');
+            const searchInput = document.getElementById('searchInput');
+
+            // Refresh button
+            refreshBtn.addEventListener('click', () => {
+                allChannels[currentPage] = null;
+                currentDisplayedCount[currentPage] = 50;
+                loadPage(currentPage);
+            });
+
+            // Search button
+            searchBtn.addEventListener('click', () => {
+                searchBox.classList.toggle('active');
+                if (searchBox.classList.contains('active')) {
+                    searchInput.focus();
+                }
+            });
+
+            // Search functionality
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const searchResults = document.getElementById('searchResults');
+                
+                if (query.length < 2) {
+                    searchResults.innerHTML = '';
+                    return;
+                }
+
+                const channels = allChannels[currentPage] || [];
+                const filtered = channels.filter(ch => 
+                    sanitizeTitle(ch.title).toLowerCase().includes(query)
+                ).slice(0, 10);
+
+                searchResults.innerHTML = filtered.map(ch => `
+                    <div class="search-result-item" onclick="playMedia('${ch.url}', '${ch.title}')">${sanitizeTitle(ch.title)}</div>
+                `).join('');
+            });
+
+            // Close search on Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    searchBox.classList.remove('active');
+                }
+            });
+        }
+
+        function showEventLinkSelection(event) {
+            const links = event.eventData && event.eventData.links ? event.eventData.links : [];
+            const linkNames = event.eventData && event.eventData.linkNames ? event.eventData.linkNames : [];
+            
+            // Safety check - ensure links is an array
+            if (!Array.isArray(links) || links.length === 0) {
+                console.warn('No valid links found for event:', event.title);
+                playMedia(event.url, event.title);
+                return;
+            }
+            
+            let linkOptions = 'Select a stream:\n\n';
+            links.forEach((link, index) => {
+                const linkName = linkNames[index] || `Stream ${index + 1}`;
+                linkOptions += `${index + 1}. ${linkName}\n`;
+            });
+            
+            console.log('Available streams for', event.title, ':', links);
+            
+            if (links.length > 1) {
+                // Show selection dialog
+                const choice = prompt(linkOptions, '1');
+                if (choice !== null) {
+                    const index = parseInt(choice) - 1;
+                    if (index >= 0 && index < links.length) {
+                        playMedia(links[index], event.title);
+                    } else {
+                        alert('Invalid selection');
+                    }
+                }
+            } else if (links.length === 1) {
+                // Only one link, play directly
+                playMedia(links[0], event.title);
+            }
+        }
+    </script>
+</body>
+</html>
