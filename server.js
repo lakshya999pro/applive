@@ -84,7 +84,7 @@ async function fetchAndDecryptLink(linkPath) {
     
     try {
         // Construct full URL: https://sufyanpromax.space/pro/VDIw...txt
-        const fullUrl = `https://sufyanpromax.space/${linkPath}`;
+        const fullUrl = `https://matkeritnagurorxbxb.store/${linkPath}`;
         console.log(`Fetching link from: ${fullUrl}`);
         
         const response = await axios.get(fullUrl, {
@@ -146,7 +146,7 @@ app.get('/api/events', async (req, res) => {
     try {
         console.log('Fetching events from SK Tech API...');
         
-        const response = await axios.get('https://sufyanpromax.space/events.txt', {
+        const response = await axios.get('https://matkeritnagurorxbxb.store/events.txt', {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             },
@@ -240,7 +240,7 @@ app.get('/api/categories', async (req, res) => {
     try {
         console.log('Fetching categories from SK Tech API...');
         
-        const response = await axios.get('https://sufyanpromax.space/categories.txt', {
+        const response = await axios.get('https://matkeritnagurorxbxb.store/categories.txt', {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             },
