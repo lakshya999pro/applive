@@ -38,7 +38,7 @@ app.use(express.static('public'));
 // ─────────────────────────────────────────────
 
 /** Default fallback base URL (used when Firebase Remote Config fetch fails) */
-const DEFAULT_BASE_URL = 'https://matkeritnagurorxbxb.store';
+const DEFAULT_BASE_URL = 'https://skapp.top';
 
 /** Firebase credentials — set these in environment variables or replace inline */
 const FIREBASE_CONFIG = {
