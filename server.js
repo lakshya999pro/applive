@@ -17,6 +17,12 @@ app.use(cors({
 // ─────────────────────────────────────────────
 // SK Tech Decryption Configuration
 // ─────────────────────────────────────────────
+
+// V23 (new scheme) — tried first
+const V23_KEY = Buffer.from('ST00ZGt3UGlPdVJP', 'utf8');
+const V23_IV  = Buffer.from('d2WT1lR4ckEvUsdk', 'utf8');
+
+// Legacy scheme — fallback
 const AES_KEY = Buffer.from('l2l5kB7xC5qP1rK1', 'utf8');
 const AES_IV  = Buffer.from('p1K5nP7uB8hH1l19', 'utf8');
 
@@ -38,14 +44,14 @@ app.use(express.static('public'));
 // ─────────────────────────────────────────────
 
 /** Default fallback base URL (used when Firebase Remote Config fetch fails) */
-const DEFAULT_BASE_URL = 'https://skapp.top';
+const DEFAULT_BASE_URL = 'https://welalagaa.site';
 
 /** Firebase credentials — set these in environment variables or replace inline */
 const FIREBASE_CONFIG = {
     packageName:   process.env.SKTECH_PACKAGE_NAME   || 'com.live.sktechtv',
-    apiKey:        process.env.SKTECH_FIREBASE_API_KEY        || '',
-    appId:         process.env.SKTECH_FIREBASE_APP_ID         || '',
-    projectNumber: process.env.SKTECH_FIREBASE_PROJECT_NUMBER || '',
+    apiKey:        process.env.SKTECH_FIREBASE_API_KEY        || 'AIzaSyClGjK1EBL-ZLbCoep1z5QSmwMyHshimSk',
+    appId:         process.env.SKTECH_FIREBASE_APP_ID         || '1:330162934410:android:0d81c4732e3d206d6cd373',
+    projectNumber: process.env.SKTECH_FIREBASE_PROJECT_NUMBER || '330162934410',
 };
 
 /** In-memory cache for the resolved base URL (lives for the process lifetime) */
@@ -155,9 +161,53 @@ function customToStandardBase64(customB64) {
 }
 
 /**
- * Complete SK Tech decryption pipeline
+ * V23 decryption pipeline (new scheme — tried first)
+ * Mirrors SKLiveCryptoUtils.decryptV23() in Kotlin:
+ *   1. Pad base64 if needed
+ *   2. Base64-decode → byte array
+ *   3. Swap adjacent bytes (even indices)
+ *   4. Reverse the whole array
+ *   5. Base64-decode result → AES-CBC ciphertext
+ *   6. Decrypt with V23_KEY / V23_IV
  */
-function decryptSKLive(encryptedData) {
+function decryptV23(encryptedData) {
+    try {
+        // Step 1: Pad to 4-byte boundary
+        const padLen = (4 - (encryptedData.length % 4)) % 4;
+        const padded = encryptedData + '='.repeat(padLen);
+
+        // Step 2: Base64-decode → byte array
+        const inner = Array.from(Buffer.from(padded, 'base64'));
+
+        // Step 3: Swap adjacent bytes pairwise
+        for (let i = 0; i < inner.length - 1; i += 2) {
+            const tmp = inner[i];
+            inner[i]     = inner[i + 1];
+            inner[i + 1] = tmp;
+        }
+
+        // Step 4: Reverse entire array
+        inner.reverse();
+
+        // Step 5: Base64-decode the transformed bytes → AES ciphertext
+        const ciphertext = Buffer.from(Buffer.from(inner).toString('latin1'), 'base64');
+
+        // Step 6: AES-128-CBC decrypt
+        const decipher = crypto.createDecipheriv('aes-128-cbc', V23_KEY, V23_IV);
+        decipher.setAutoPadding(true);
+        let decrypted = decipher.update(ciphertext);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+        return decrypted.toString('utf8');
+    } catch (error) {
+        return null; // Signal failure so legacy path is tried
+    }
+}
+
+/**
+ * Legacy decryption pipeline (fallback)
+ * Mirrors SKLiveCryptoUtils.decryptLegacy() in Kotlin.
+ */
+function decryptLegacy(encryptedData) {
     try {
         // Step 1: Custom base64 → Standard base64
         const standardB64 = customToStandardBase64(encryptedData);
@@ -165,24 +215,46 @@ function decryptSKLive(encryptedData) {
         // Step 2: Base64 decode → intermediate string
         const decoded = Buffer.from(standardB64, 'base64').toString('utf8');
 
-        // Step 3: REVERSE the string (critical step!)
+        // Step 3: Reverse the string
         const reversedStr = decoded.split('').reverse().join('');
 
         // Step 4: Base64 decode → AES ciphertext
         const ciphertext = Buffer.from(reversedStr, 'base64');
 
-        // Step 5: AES-CBC decrypt → JSON plaintext
+        if (ciphertext.length % 16 !== 0) {
+            console.error('    ERROR: Not block-aligned for AES!');
+            return decoded;
+        }
+
+        // Step 5: AES-CBC decrypt
         const decipher = crypto.createDecipheriv('aes-128-cbc', AES_KEY, AES_IV);
         decipher.setAutoPadding(true);
-
         let decrypted = decipher.update(ciphertext);
         decrypted = Buffer.concat([decrypted, decipher.final()]);
-
         return decrypted.toString('utf8');
     } catch (error) {
-        console.error('Decryption error:', error.message);
-        throw error;
+        return null;
     }
+}
+
+/**
+ * Complete SK Tech decryption pipeline — mirrors decryptSKLive() in Kotlin.
+ * Tries V23 first; falls back to legacy on failure.
+ */
+function decryptSKLive(encryptedData) {
+    const v23Result = decryptV23(encryptedData);
+    if (v23Result !== null) {
+        console.log('Decrypted with V23 scheme');
+        return v23Result;
+    }
+
+    const legacyResult = decryptLegacy(encryptedData);
+    if (legacyResult !== null) {
+        console.log('Decrypted with legacy scheme');
+        return legacyResult;
+    }
+
+    throw new Error('Both V23 and legacy decryption failed');
 }
 
 /**
